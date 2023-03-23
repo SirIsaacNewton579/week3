@@ -37,6 +37,7 @@ void awithw(double a[6],double w){
     for(int i=0;i<6;i++) a[i] = p1[i]*w+p2[i];
 }
 double kr(double alp,double a[6]){
+    //计算kr
     double ret = 0.;
     for(int i=0;i<6;i++){
         ret += a[i]*cos((i-3)*alp);
@@ -44,6 +45,7 @@ double kr(double alp,double a[6]){
     return ret;
 }
 double ki(double alp,double a[6]){
+    //计算ki
     double ret = 0.;
     for(int i=0;i<6;i++){
         ret += a[i]*sin((i-3)*alp);
@@ -51,6 +53,7 @@ double ki(double alp,double a[6]){
     return ret;
 }
 double Ja(double a[6]){
+    //优化目标函数
     double alp = M_PI/17;
     double ki2s = 0;
     double kr2s = 0;
@@ -61,12 +64,14 @@ double Ja(double a[6]){
     return 2.*ki2s+1.*kr2s;  
 }
 double Jw(double w){
+    //优化目标函数
     double a[6];
     awithw(a,w);
     return Ja(a);
 }
 
 void outputcurve(string filename, double a[]){
+    //输出耗散色散曲线
     filename += "alpha,kr,ki.csv";
     ofstream csvfile;
     csvfile.open(filename, ios::out | ios::trunc);
@@ -77,6 +82,7 @@ void outputcurve(string filename, double a[]){
     csvfile.close();
 }
 double Newscheme(double u[],int usize,double a[6],int idx){
+    //差分格式
     double ux=0.;
     for(int i=0;i<6;i++){
         ux += u[((idx+i-3)+(usize-1))%(usize-1)]*a[i];
@@ -84,6 +90,7 @@ double Newscheme(double u[],int usize,double a[6],int idx){
     return ux;
 }
 void updateu(double u[],int usize,double a[6],double dx,double dt,int Nt){
+    //用于时间步推进，计算Nt*dt时刻的u
     double* unext = new double[usize];
     double* u1 = new double[usize];
     double* u2 = new double[usize];
@@ -109,6 +116,7 @@ void updateu(double u[],int usize,double a[6],double dx,double dt,int Nt){
     delete[] unext;
 }
 void ordertest(double a[]){
+    //用于精度验证
     int minN = 6,N;
     double maxdx = 2.*M_PI/minN;
     double dx;
@@ -137,46 +145,38 @@ void ordertest(double a[]){
     csvfile.close();
 }
 int main(){
-    double a[6]={-0.03333333,0.25,-1,0.333333333,0.5,-0.05};
-    outputcurve("5order",a);
-    ordertest(a);//精度验证
+    double a[6];
     double w ;
 
     //开始向时间步推进
     double dt = 0.01;
+    double Nt = 2000;
     int Nx = 21;
     double dx = 2*M_PI/(Nx-1);
-    
-    double *u = new double[Nx];
-    int Nt = 50000;
-    for(int i=0;i<Nx;i++){
-        u[i] = sin(i*dx);
-    }
-    updateu(u,Nx,a,dx,dt,Nt);  //计算Nt*dt时刻的u
-    
     
     w = golds(Jw,-2.,2.);  //黄金分割法求最佳参数w
     cout <<"最优参数为："<< w <<endl;
     awithw(a,w);  //更新a
+    cout << "a:\t";
     for(int i=0;i<6;i++){
         cout << a[i] << "\t" ;
     }
     outputcurve("",a);   //输出耗散色散曲线
-    //ordertest(a);//精度验证
+    ordertest(a);//精度验证
     double *uf = new double[Nx];
     for(int i=0;i<Nx;i++){
         uf[i] = sin(i*dx);
     }
-    updateu(uf,Nx,a,dx,dt,Nt);
+    updateu(uf,Nx,a,dx,dt,Nt);  //计算Nt*dt时刻的u
     
-    
+    //下面输出数值解和精确解
     ofstream csvfile;
     csvfile.open("calc_exact.csv", ios::out | ios::trunc);
-    csvfile <<"x" << "," <<  "5ord" <<","<< "Calc of Newscheme"<<","<< "Exact" << endl;
+    csvfile <<"x" << "," << "Calc of Newscheme"<<","<< "Exact" << endl;
     for(int i=0;i<Nx;i++){
-        csvfile <<i*dx << "," <<  u[i] <<","<< uf[i]<<","<< sin(i*dx-dt*Nt) << endl;
+        csvfile <<i*dx <<","<< uf[i]<<","<< sin(i*dx-dt*Nt) << endl;
     }
     csvfile.close();
-    delete[] u;
+    delete[] uf;
     return 0;
 }

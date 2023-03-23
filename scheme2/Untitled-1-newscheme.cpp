@@ -32,8 +32,9 @@ double golds(Fun f,double a,double b,double eps=1e-7,double delta=1e-7){
 
 //用w更新a
 void awithw(double a[6],double w){
-    double p1[6] = {0.1,-0.5,1.,-1,0.5,-0.1};
-    double p2[6] = {0.,0.08333333333,-0.6666666667,0.,0.6666666667,-0.08333333333};
+    double p1[6] = {  3./44,-2./33,-3./11,0.,-37./132,6./11};
+    double p2[6] = {-0.033349806441991,-0.011116602147330,0.377964473009228,
+                    -0.733695741723794,0.544713505219180,-0.144515827915293};
     for(int i=0;i<6;i++) a[i] = p1[i]*w+p2[i];
 }
 double kr(double alp,double a[6]){
@@ -51,14 +52,14 @@ double ki(double alp,double a[6]){
     return ret;
 }
 double Ja(double a[6]){
-    double alp = M_PI/17;
+    double alp = M_PI/3.;
     double ki2s = 0;
     double kr2s = 0;
     for(int i=1;i<=10;i++){
         ki2s += (ki((alp*i)/10,a)-(alp*i)/10)*(ki((alp*i)/10,a)-(alp*i)/10);
         kr2s += kr((alp*i)/10,a)*kr((alp*i)/10,a);
     }
-    return 2.*ki2s+1.*kr2s;  
+    return 2.*ki2s+5.*kr2s;  
 }
 double Jw(double w){
     double a[6];
@@ -79,7 +80,7 @@ void outputcurve(string filename, double a[]){
 double Newscheme(double u[],int usize,double a[6],int idx){
     double ux=0.;
     for(int i=0;i<6;i++){
-        ux += u[((idx+i-3)+(usize-1))%(usize-1)]*a[i];
+        ux += u[((idx+i-4)+(usize-1))%(usize-1)]*a[i];
     }
     return ux;
 }
@@ -137,7 +138,7 @@ void ordertest(double a[]){
     csvfile.close();
 }
 int main(){
-    double a[6]={-0.03333333,0.25,-1,0.333333333,0.5,-0.05};
+    double a[6]={-0.7500,-0.3333,9.0000,-18.0000,13.0833,-3.0000};
     outputcurve("5order",a);
     ordertest(a);//精度验证
     double w ;
@@ -148,31 +149,30 @@ int main(){
     double dx = 2*M_PI/(Nx-1);
     
     double *u = new double[Nx];
-    int Nt = 50000;
+    int Nt = 100000;
     for(int i=0;i<Nx;i++){
         u[i] = sin(i*dx);
     }
     updateu(u,Nx,a,dx,dt,Nt);  //计算Nt*dt时刻的u
     
     
-    w = golds(Jw,-2.,2.);  //黄金分割法求最佳参数w
-    cout <<"最优参数为："<< w <<endl;
+    w = golds(Jw,-10.,10.);  //黄金分割法求最佳参数w
+    cout << w <<endl;
     awithw(a,w);  //更新a
     for(int i=0;i<6;i++){
         cout << a[i] << "\t" ;
     }
     outputcurve("",a);   //输出耗散色散曲线
-    //ordertest(a);//精度验证
+    ordertest(a);//精度验证
     double *uf = new double[Nx];
     for(int i=0;i<Nx;i++){
         uf[i] = sin(i*dx);
     }
     updateu(uf,Nx,a,dx,dt,Nt);
     
-    
     ofstream csvfile;
     csvfile.open("calc_exact.csv", ios::out | ios::trunc);
-    csvfile <<"x" << "," <<  "5ord" <<","<< "Calc of Newscheme"<<","<< "Exact" << endl;
+    csvfile <<"x" << "," <<  "5ord" <<","<< "this"<<","<< "Exact" << endl;
     for(int i=0;i<Nx;i++){
         csvfile <<i*dx << "," <<  u[i] <<","<< uf[i]<<","<< sin(i*dx-dt*Nt) << endl;
     }
